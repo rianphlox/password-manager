@@ -1,0 +1,52 @@
+name: qpass
+description: A secure password manager built with Flutter
+
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+  
+  # Security & Storage
+  flutter_secure_storage: ^9.0.0
+  crypto: ^3.0.3
+  encrypt: ^5.0.1
+  
+  # Authentication
+  local_auth: ^2.1.6
+  
+  # Storage
+  shared_preferences: ^2.2.2
+  sqflite: ^2.3.0
+  path: ^1.8.3
+  
+  # Utilities
+  clipboard: ^0.1.3
+  
+  # State Management
+  provider: ^6.1.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/icons/
+
+# Launcher icon configuration
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/app_icon.png"
+  adaptive_icon_background: "#ffffff" # background color for Android adaptive icons
+  adaptive_icon_foreground: "assets/icons/app_icon.png"
