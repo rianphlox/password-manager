@@ -870,7 +870,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   child: Text(
-                    'Create Vault',
+                    'Create Password',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
                   ),
                 ),
@@ -1009,7 +1009,7 @@ class _LockScreenState extends State<LockScreen> {
               SizedBox(height: 32),
               Text(
                 'Welcome Back',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Theme.of(context).brightness == Brightness.light ? Colors.black : Colors.white),
               ),
               SizedBox(height: 8),
               Text(
@@ -1252,12 +1252,12 @@ class _PasswordListScreenState extends State<PasswordListScreen> {
                 ),
                 Text(
                   'Welcome back to QPass',
-                  style: TextStyle(fontSize: 16, color: Colors.grey[400]),
+                  style: TextStyle(fontSize: 16, color: Theme.of(context).brightness == Brightness.light ? Colors.black : Colors.grey[400]),
                 ),
                 SizedBox(height: 24),
                 Text(
                   'Your Passwords (${passwordProvider.passwords.length})',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Theme.of(context).brightness == Brightness.light ? Colors.black : Colors.white),
                 ),
                 SizedBox(height: 16),
                 Container(
@@ -1993,7 +1993,7 @@ class _PasswordGeneratorScreenState extends State<PasswordGeneratorScreen> {
           children: [
             Text(
               'Password Generator',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Theme.of(context).brightness == Brightness.light ? Colors.black : Colors.white),
             ),
             SizedBox(height: 8),
             Text(
@@ -2182,14 +2182,14 @@ class ProfileScreen extends StatelessWidget {
                   children: [
                     Text(
                       'Profile',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Theme.of(context).brightness == Brightness.light ? Colors.black : Colors.white),
                     ),
                     Spacer(),
                     IconButton(
                       onPressed: () {
                         Navigator.push(context, MaterialPageRoute(builder: (context) => SettingsScreen()));
                       },
-                      icon: Icon(Icons.settings, color: Colors.grey[400]),
+                      icon: Icon(Icons.settings, color: Theme.of(context).brightness == Brightness.light ? Colors.black : Colors.grey[400]),
                     ),
                   ],
                 ),
