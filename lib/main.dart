@@ -32,8 +32,8 @@ class PasswordManagerApp extends StatelessWidget {
       builder: (context, settingsProvider, child) {
         return MaterialApp(
           title: 'QPass',
-          theme: _buildLightTheme(),
-          darkTheme: _buildDarkTheme(),
+          theme: _buildLightTheme(settingsProvider.fontSize),
+          darkTheme: _buildDarkTheme(settingsProvider.fontSize),
           themeMode: _getThemeMode(settingsProvider.themeMode),
           home: SplashScreen(),
           debugShowCheckedModeBanner: false,
@@ -55,7 +55,7 @@ class PasswordManagerApp extends StatelessWidget {
     }
   }
 
-  ThemeData _buildLightTheme() {
+  ThemeData _buildLightTheme(double fontSize) {
     return ThemeData.light().copyWith(
       primaryColor: Color(0xFF1E88E5),
       scaffoldBackgroundColor: Color(0xFFF5F5F5),
@@ -73,16 +73,16 @@ class PasswordManagerApp extends StatelessWidget {
         foregroundColor: Colors.black,
         titleTextStyle: TextStyle(
           color: Colors.black,
-          fontSize: 18,
+          fontSize: fontSize + 2,
           fontWeight: FontWeight.w600,
         ),
       ),
       textTheme: TextTheme(
-        bodyLarge: TextStyle(color: Colors.black87),
-        bodyMedium: TextStyle(color: Colors.black87),
-        titleLarge: TextStyle(color: Colors.black87),
-        titleMedium: TextStyle(color: Colors.black87),
-        titleSmall: TextStyle(color: Colors.black87),
+        bodyLarge: TextStyle(color: Colors.black87, fontSize: fontSize),
+        bodyMedium: TextStyle(color: Colors.black87, fontSize: fontSize - 2),
+        titleLarge: TextStyle(color: Colors.black87, fontSize: fontSize + 4),
+        titleMedium: TextStyle(color: Colors.black87, fontSize: fontSize + 2),
+        titleSmall: TextStyle(color: Colors.black87, fontSize: fontSize),
       ),
       iconTheme: IconThemeData(color: Color(0xFF1E88E5)),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -121,13 +121,13 @@ class PasswordManagerApp extends StatelessWidget {
     );
   }
 
-  ThemeData _buildDarkTheme() {
+  ThemeData _buildDarkTheme(double fontSize) {
     return ThemeData.dark().copyWith(
-      primaryColor: Color(0xFF00C896),
+      primaryColor: Color(0xFF1E88E5),
       scaffoldBackgroundColor: Color(0xFF1A1A1A),
       colorScheme: ColorScheme.dark(
-        primary: Color(0xFF00C896),
-        secondary: Color(0xFF00C896),
+        primary: Color(0xFF1E88E5),
+        secondary: Color(0xFF1E88E5),
         surface: Color(0xFF2A2A2A),
         background: Color(0xFF1A1A1A),
       ),
@@ -138,18 +138,18 @@ class PasswordManagerApp extends StatelessWidget {
         foregroundColor: Colors.white,
         titleTextStyle: TextStyle(
           color: Colors.white,
-          fontSize: 18,
+          fontSize: fontSize + 2,
           fontWeight: FontWeight.w600,
         ),
       ),
       textTheme: TextTheme(
-        bodyLarge: TextStyle(color: Colors.white),
-        bodyMedium: TextStyle(color: Colors.white),
-        titleLarge: TextStyle(color: Colors.white),
-        titleMedium: TextStyle(color: Colors.white),
-        titleSmall: TextStyle(color: Colors.white),
+        bodyLarge: TextStyle(color: Colors.white, fontSize: fontSize),
+        bodyMedium: TextStyle(color: Colors.white, fontSize: fontSize - 2),
+        titleLarge: TextStyle(color: Colors.white, fontSize: fontSize + 4),
+        titleMedium: TextStyle(color: Colors.white, fontSize: fontSize + 2),
+        titleSmall: TextStyle(color: Colors.white, fontSize: fontSize),
       ),
-      iconTheme: IconThemeData(color: Colors.white70),
+      iconTheme: IconThemeData(color: Color(0xFF1E88E5)),
     );
   }
 }
@@ -316,12 +316,14 @@ class SettingsProvider with ChangeNotifier {
   static const String _themeKey = 'theme_mode';
   static const String _defaultCategoryKey = 'default_category';
   static const String _passwordComplexityKey = 'password_complexity';
+  static const String _fontSizeKey = 'font_size';
 
   int _autoLockMinutes = 5;
   int _clipboardClearSeconds = 30;
   int _defaultPasswordLength = 16;
   String _themeMode = 'dark';
   String _defaultCategory = 'Social';
+  double _fontSize = 16.0;
   Map<String, bool> _passwordComplexity = {
     'uppercase': true,
     'lowercase': true,
@@ -335,6 +337,7 @@ class SettingsProvider with ChangeNotifier {
   int get defaultPasswordLength => _defaultPasswordLength;
   String get themeMode => _themeMode;
   String get defaultCategory => _defaultCategory;
+  double get fontSize => _fontSize;
   Map<String, bool> get passwordComplexity => _passwordComplexity;
 
   SettingsProvider() {
@@ -348,6 +351,7 @@ class SettingsProvider with ChangeNotifier {
     _defaultPasswordLength = prefs.getInt(_defaultPasswordLengthKey) ?? 16;
     _themeMode = prefs.getString(_themeKey) ?? 'dark';
     _defaultCategory = prefs.getString(_defaultCategoryKey) ?? 'Social';
+    _fontSize = prefs.getDouble(_fontSizeKey) ?? 16.0;
     
     _passwordComplexity = {
       'uppercase': prefs.getBool('${_passwordComplexityKey}_uppercase') ?? true,
@@ -401,6 +405,13 @@ class SettingsProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> setFontSize(double size) async {
+    _fontSize = size;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_fontSizeKey, size);
+    notifyListeners();
+  }
+
   List<int> get autoLockOptions => [1, 5, 15, 30, -1];
   String getAutoLockDisplayText(int minutes) {
     if (minutes == -1) return 'Never';
@@ -411,6 +422,11 @@ class SettingsProvider with ChangeNotifier {
   String getClipboardClearDisplayText(int seconds) {
     if (seconds < 60) return '$seconds seconds';
     return '${seconds ~/ 60} minute${seconds ~/ 60 == 1 ? '' : 's'}';
+  }
+
+  List<double> get fontSizeOptions => [12.0, 14.0, 16.0, 18.0, 20.0];
+  String getFontSizeDisplayText(double size) {
+    return '${size.round()}px';
   }
 }
 
@@ -543,12 +559,29 @@ class AuthProvider with ChangeNotifier {
     await _storage.delete(key: _masterPasswordKey);
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_biometricEnabledKey);
-    
+
     _isAuthenticated = false;
     _hasMasterPassword = false;
     _isBiometricEnabled = false;
     _autoLockTimer?.cancel();
     notifyListeners();
+  }
+
+  Future<bool> changeMasterPassword(String currentPassword, String newPassword) async {
+    try {
+      final storedHash = await _storage.read(key: _masterPasswordKey);
+      final currentHash = _hashPassword(currentPassword);
+
+      if (storedHash != currentHash) {
+        return false;
+      }
+
+      final newHash = _hashPassword(newPassword);
+      await _storage.write(key: _masterPasswordKey, value: newHash);
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 }
 
@@ -1246,7 +1279,7 @@ class _PasswordListScreenState extends State<PasswordListScreen> {
                       onPressed: () {
                         Provider.of<AuthProvider>(context, listen: false).lock();
                       },
-                      icon: Icon(Icons.lock, color: Colors.grey[400]),
+                      icon: Icon(Icons.lock, color: Theme.of(context).colorScheme.primary),
                     ),
                   ],
                 ),
@@ -1347,12 +1380,12 @@ class _PasswordListScreenState extends State<PasswordListScreen> {
           children: [
             IconButton(
               onPressed: () => _copyToClipboard(password.password),
-              icon: Icon(Icons.copy, color: Colors.grey[400]),
+              icon: Icon(Icons.copy, color: Theme.of(context).colorScheme.primary),
               tooltip: 'Copy password',
             ),
             IconButton(
               onPressed: () => _copyToClipboard(password.username),
-              icon: Icon(Icons.person, color: Colors.grey[400]),
+              icon: Icon(Icons.person, color: Theme.of(context).colorScheme.primary),
               tooltip: 'Copy username',
             ),
           ],
@@ -1442,11 +1475,11 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
       appBar: AppBar(
         title: Text(
           isEditing ? 'Edit Password' : 'Add Password',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: Theme.of(context).brightness == Brightness.light ? Colors.black : Colors.white),
         ),
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.primary),
         ),
       ),
       body: SafeArea(
@@ -1549,7 +1582,7 @@ class _AddPasswordScreenState extends State<AddPasswordScreen> {
             style: TextStyle(color: Colors.white),
             underline: Container(),
             isExpanded: true,
-            icon: Icon(Icons.keyboard_arrow_down, color: Colors.grey[400]),
+            icon: Icon(Icons.keyboard_arrow_down, color: Theme.of(context).colorScheme.primary),
             items: _categories.map((String value) {
               return DropdownMenuItem<String>(
                 value: value,
@@ -1716,15 +1749,15 @@ class _PasswordDetailScreenState extends State<PasswordDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.password.service, style: TextStyle(color: Colors.white)),
+        title: Text(widget.password.service, style: TextStyle(color: Theme.of(context).brightness == Brightness.light ? Colors.black : Colors.white)),
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.primary),
         ),
         actions: [
           IconButton(
             onPressed: () => _editPassword(),
-            icon: Icon(Icons.edit, color: Colors.white),
+            icon: Icon(Icons.edit, color: Theme.of(context).colorScheme.primary),
           ),
           PopupMenuButton<String>(
             onSelected: (value) {
@@ -1744,7 +1777,7 @@ class _PasswordDetailScreenState extends State<PasswordDetailScreen> {
                 ),
               ),
             ],
-            icon: Icon(Icons.more_vert, color: Colors.white),
+            icon: Icon(Icons.more_vert, color: Theme.of(context).colorScheme.primary),
             color: Color(0xFF2A2A2A),
           ),
         ],
@@ -1810,7 +1843,7 @@ class _PasswordDetailScreenState extends State<PasswordDetailScreen> {
               ),
               IconButton(
                 onPressed: () => _copyToClipboard(value),
-                icon: Icon(Icons.copy, color: Colors.grey[400]),
+                icon: Icon(Icons.copy, color: Theme.of(context).colorScheme.primary),
               ),
             ],
           ),
@@ -1853,7 +1886,7 @@ class _PasswordDetailScreenState extends State<PasswordDetailScreen> {
               ),
               IconButton(
                 onPressed: () => _copyToClipboard(widget.password.password),
-                icon: Icon(Icons.copy, color: Colors.grey[400]),
+                icon: Icon(Icons.copy, color: Theme.of(context).colorScheme.primary),
               ),
             ],
           ),
@@ -2323,10 +2356,10 @@ class _SecurityScreenState extends State<SecurityScreen> {
       builder: (context, settingsProvider, authProvider, passwordProvider, child) {
         return Scaffold(
           appBar: AppBar(
-            title: Text('Security', style: TextStyle(color: Colors.white)),
+            title: Text('Security', style: TextStyle(color: Theme.of(context).brightness == Brightness.light ? Colors.black : Colors.white)),
             leading: IconButton(
               onPressed: () => Navigator.pop(context),
-              icon: Icon(Icons.arrow_back, color: Colors.white),
+              icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.primary),
             ),
           ),
           body: SafeArea(
@@ -2334,7 +2367,6 @@ class _SecurityScreenState extends State<SecurityScreen> {
               padding: EdgeInsets.all(16),
               children: [
                 _buildSectionHeader('Authentication'),
-                _buildBiometricSetting(authProvider),
                 _buildAutoLockSetting(settingsProvider, authProvider),
                 _buildListTile(
                   'Change Master Password',
@@ -2347,12 +2379,6 @@ class _SecurityScreenState extends State<SecurityScreen> {
                 
                 _buildSectionHeader('Privacy'),
                 _buildClipboardSetting(settingsProvider),
-                _buildListTile(
-                  'Screen Recording Protection',
-                  'Hide content during screen recording',
-                  Icons.screen_lock_portrait,
-                  showArrow: false,
-                ),
                 
                 SizedBox(height: 24),
                 
@@ -2369,12 +2395,6 @@ class _SecurityScreenState extends State<SecurityScreen> {
                   Icons.security,
                   onTap: () => _showSecurityAudit(context, passwordProvider),
                 ),
-                _buildListTile(
-                  'Failed Login Attempts',
-                  'View unauthorized access attempts',
-                  Icons.warning,
-                  onTap: () => _showComingSoon(context, 'Failed login tracking'),
-                ),
                 
                 SizedBox(height: 24),
                 
@@ -2384,12 +2404,6 @@ class _SecurityScreenState extends State<SecurityScreen> {
                   'Create secure backup of your passwords',
                   Icons.download,
                   onTap: () => _exportVault(context, passwordProvider),
-                ),
-                _buildListTile(
-                  'Emergency Access',
-                  'Setup trusted contact for emergencies',
-                  Icons.emergency,
-                  onTap: () => _showComingSoon(context, 'Emergency access'),
                 ),
                 
                 SizedBox(height: 32),
@@ -2430,25 +2444,6 @@ class _SecurityScreenState extends State<SecurityScreen> {
     );
   }
 
-  Widget _buildBiometricSetting(AuthProvider authProvider) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: Color(0xFF2A2A2A),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: ListTile(
-        leading: Icon(Icons.fingerprint, color: Theme.of(context).colorScheme.primary),
-        title: Text('Biometric Authentication', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-        subtitle: Text('Unlock with fingerprint or face ID', style: TextStyle(color: Colors.grey[400], fontSize: 12)),
-        trailing: Switch(
-          value: authProvider.isBiometricEnabled,
-          onChanged: (value) => _toggleBiometric(context, authProvider, value),
-          activeColor: Theme.of(context).colorScheme.primary,
-        ),
-      ),
-    );
-  }
 
   Widget _buildAutoLockSetting(SettingsProvider settingsProvider, AuthProvider authProvider) {
     return Container(
@@ -2576,33 +2571,111 @@ class _SecurityScreenState extends State<SecurityScreen> {
     );
   }
 
-  Future<void> _toggleBiometric(BuildContext context, AuthProvider authProvider, bool enable) async {
-    if (enable) {
-      final canUseBiometric = await authProvider.canUseBiometric();
-      if (!canUseBiometric) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Biometric authentication not available'), backgroundColor: Colors.orange),
-        );
-        return;
-      }
-
-      final success = await authProvider.authenticateWithBiometrics();
-      if (success) {
-        await authProvider.enableBiometric(true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Biometric authentication enabled'), backgroundColor: Theme.of(context).colorScheme.primary),
-        );
-      }
-    } else {
-      await authProvider.enableBiometric(false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Biometric authentication disabled'), backgroundColor: Theme.of(context).colorScheme.primary),
-      );
-    }
-  }
 
   void _showChangeMasterPassword(BuildContext context, AuthProvider authProvider) {
-    _showComingSoon(context, 'Change master password');
+    final currentPasswordController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Color(0xFF2A2A2A),
+        title: Text('Change Master Password', style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: currentPasswordController,
+              obscureText: true,
+              style: TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: 'Current Password',
+                labelStyle: TextStyle(color: Colors.grey[400]),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey[400]!),
+                ),
+                focusedBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
+                ),
+              ),
+            ),
+            SizedBox(height: 16),
+            TextField(
+              controller: newPasswordController,
+              obscureText: true,
+              style: TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: 'New Password',
+                labelStyle: TextStyle(color: Colors.grey[400]),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey[400]!),
+                ),
+                focusedBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
+                ),
+              ),
+            ),
+            SizedBox(height: 16),
+            TextField(
+              controller: confirmPasswordController,
+              obscureText: true,
+              style: TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: 'Confirm New Password',
+                labelStyle: TextStyle(color: Colors.grey[400]),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey[400]!),
+                ),
+                focusedBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: TextStyle(color: Colors.grey[400])),
+          ),
+          TextButton(
+            onPressed: () async {
+              if (newPasswordController.text != confirmPasswordController.text) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('New passwords do not match'), backgroundColor: Colors.red),
+                );
+                return;
+              }
+
+              if (newPasswordController.text.length < 8) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('New password must be at least 8 characters'), backgroundColor: Colors.red),
+                );
+                return;
+              }
+
+              final success = await authProvider.changeMasterPassword(
+                currentPasswordController.text,
+                newPasswordController.text,
+              );
+
+              if (success) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Master password changed successfully'), backgroundColor: Theme.of(context).colorScheme.primary),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Current password is incorrect'), backgroundColor: Colors.red),
+                );
+              }
+            },
+            child: Text('Change Password', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showPasswordHealth(BuildContext context, PasswordProvider provider) {
@@ -2800,10 +2873,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context, settingsProvider, authProvider, passwordProvider, child) {
         return Scaffold(
           appBar: AppBar(
-            title: Text('Settings', style: TextStyle(color: Colors.white)),
+            title: Text('Settings', style: TextStyle(color: Theme.of(context).brightness == Brightness.light ? Colors.black : Colors.white)),
             leading: IconButton(
               onPressed: () => Navigator.pop(context),
-              icon: Icon(Icons.arrow_back, color: Colors.white),
+              icon: Icon(Icons.arrow_back, color: Theme.of(context).brightness == Brightness.light ? Colors.black : Theme.of(context).colorScheme.primary),
             ),
           ),
           body: SafeArea(
@@ -2818,12 +2891,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Icons.language,
                   onTap: () => _showComingSoon(context, 'Language selection'),
                 ),
-                _buildListTile(
-                  'Font Size',
-                  'Medium',
-                  Icons.text_fields,
-                  onTap: () => _showComingSoon(context, 'Font size options'),
-                ),
+                _buildFontSizeSetting(settingsProvider),
                 
                 SizedBox(height: 24),
                 
@@ -2836,8 +2904,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 
                 _buildSectionHeader('Notifications'),
                 _buildNotificationSetting('Security Alerts', 'Get notified of security issues', true),
-                _buildNotificationSetting('Backup Reminders', 'Remind me to backup my vault', false),
-                _buildNotificationSetting('Password Expiry', 'Notify when passwords are old', false),
                 
                 SizedBox(height: 24),
                 
@@ -2972,7 +3038,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   settingsProvider.setDefaultPasswordLength(settingsProvider.defaultPasswordLength - 1);
                 }
               },
-              icon: Icon(Icons.remove, color: Colors.grey[400]),
+              icon: Icon(Icons.remove, color: Theme.of(context).colorScheme.primary),
             ),
             Text('${settingsProvider.defaultPasswordLength}', style: TextStyle(color: Colors.white)),
             IconButton(
@@ -2981,7 +3047,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   settingsProvider.setDefaultPasswordLength(settingsProvider.defaultPasswordLength + 1);
                 }
               },
-              icon: Icon(Icons.add, color: Colors.grey[400]),
+              icon: Icon(Icons.add, color: Theme.of(context).colorScheme.primary),
             ),
           ],
         ),
@@ -3036,6 +3102,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
         subtitle: Text(settingsProvider.defaultCategory, style: TextStyle(color: Colors.grey[400], fontSize: 12)),
         trailing: Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 16),
         onTap: () => _showCategoryOptions(context, settingsProvider),
+      ),
+    );
+  }
+
+  Widget _buildFontSizeSetting(SettingsProvider settingsProvider) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Color(0xFF2A2A2A),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListTile(
+        leading: Icon(Icons.text_fields, color: Theme.of(context).colorScheme.primary),
+        title: Text('Font Size', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+        subtitle: Text(settingsProvider.getFontSizeDisplayText(settingsProvider.fontSize), style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+        trailing: Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 16),
+        onTap: () => _showFontSizeOptions(context, settingsProvider),
       ),
     );
   }
@@ -3233,6 +3316,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  void _showFontSizeOptions(BuildContext context, SettingsProvider settingsProvider) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Color(0xFF2A2A2A),
+        title: Text('Font Size', style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: settingsProvider.fontSizeOptions.map((size) {
+            return RadioListTile<double>(
+              value: size,
+              groupValue: settingsProvider.fontSize,
+              onChanged: (value) {
+                settingsProvider.setFontSize(value!);
+                Navigator.pop(context);
+              },
+              title: Text(
+                settingsProvider.getFontSizeDisplayText(size),
+                style: TextStyle(color: Colors.white),
+              ),
+              activeColor: Theme.of(context).colorScheme.primary,
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
   void _showComingSoon(BuildContext context, String feature) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -3249,10 +3360,10 @@ class PrivacyPolicyScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Privacy Policy'),
+        title: Text('Privacy Policy', style: TextStyle(color: Theme.of(context).brightness == Brightness.light ? Colors.black : Colors.white)),
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, color: Theme.of(context).brightness == Brightness.light ? Colors.black : Theme.of(context).colorScheme.primary),
         ),
       ),
       body: SafeArea(
