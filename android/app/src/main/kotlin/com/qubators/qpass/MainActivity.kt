@@ -1,4 +1,4 @@
-package com.example.password_manager
+package com.qubators.qpass
 
 import io.flutter.embedding.android.FlutterActivity
 
